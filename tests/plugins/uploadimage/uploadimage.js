@@ -76,8 +76,8 @@
 			loadAndUploadCount = 0;
 
 			for ( editorName in this.editors ) {
-				// Clear uploads repository.
-				this.editors[ editorName ].uploadsRepository.loaders = [];
+				// Clear upload repository.
+				this.editors[ editorName ].uploadRepository.loaders = [];
 			}
 
 			if ( CKEDITOR.fileTools.bindNotifications.reset ) {
@@ -93,7 +93,7 @@
 			assertUploadingWidgets( editor, LOADING_IMG );
 			assert.areSame( '', editor.getData(), 'getData on loading.' );
 
-			var loader = editor.uploadsRepository.loaders[ 0 ];
+			var loader = editor.uploadRepository.loaders[ 0 ];
 
 			loader.data = bender.tools.pngBase64;
 			loader.changeStatus( 'uploading' );
@@ -115,6 +115,33 @@
 			}, 10 );
 		},
 
+		'test finish upload notification marked as important and is visible (#13032).': function() {
+			var editor = this.editors.classic;
+
+			pasteFiles( editor, [ bender.tools.getTestPngFile() ] );
+
+			var loader = editor.uploadRepository.loaders[ 0 ];
+
+			loader.data = bender.tools.pngBase64;
+			loader.changeStatus( 'uploading' );
+
+			var area = editor._.notificationArea;
+
+			// Closing notification.
+			area.notifications[ 0 ].hide();
+
+			assertUploadingWidgets( editor, LOADED_IMG );
+
+			// IE needs to wait for image to be loaded so it can read width and height of the image.
+			wait( function() {
+				loader.url = IMG_URL;
+				loader.changeStatus( 'uploaded' );
+
+				assert.areSame( 1, area.notifications.length, 'Successs notification is present because it\'s important one.' );
+				assert.areSame( 'success', area.notifications[ 0 ].type );
+			}, 10 );
+		},
+
 		'test inline with image2 (integration test)': function() {
 			var editor = this.editors.inline;
 
@@ -123,7 +150,7 @@
 			assertUploadingWidgets( editor, LOADING_IMG );
 			assert.areSame( '', editor.getData(), 'getData on loading.' );
 
-			var loader = editor.uploadsRepository.loaders[ 0 ];
+			var loader = editor.uploadRepository.loaders[ 0 ];
 
 			loader.data = bender.tools.pngBase64;
 			loader.changeStatus( 'uploading' );
@@ -155,7 +182,7 @@
 				assertUploadingWidgets( editor, LOADED_IMG );
 				assert.areSame( '<p>xx</p>', editor.getData(), 'getData on loading.' );
 
-				var loader = editor.uploadsRepository.loaders[ 0 ];
+				var loader = editor.uploadRepository.loaders[ 0 ];
 
 				loader.data = bender.tools.pngBase64;
 				loader.changeStatus( 'uploading' );
@@ -314,7 +341,7 @@
 
 		'test paste image already marked': function() {
 			var editor = this.editors.classic,
-				uploads = editor.uploadsRepository;
+				uploads = editor.uploadRepository;
 
 			resumeAfter( editor, 'paste', function( evt ) {
 				var img = CKEDITOR.dom.element.createFromHtml( evt.data.dataValue );
@@ -440,6 +467,23 @@
 			editor.once( 'afterPaste', function() {
 				resume( function() {
 					assert.areSame( 0, window.attacked.callCount );
+				} );
+			} );
+
+			wait();
+		},
+
+		'test prevent upload fake elements (#13003)': function() {
+			var editor = this.editors.inline,
+				createspy = sinon.spy( editor.uploadRepository, 'create' );
+
+			editor.fire( 'paste', {
+				dataValue: '<img src="data:image/gif;base64,aw==" alt="nothing" data-cke-realelement="some" />'
+			} );
+
+			editor.once( 'afterPaste', function() {
+				resume( function() {
+					assert.isTrue( createspy.notCalled );
 				} );
 			} );
 

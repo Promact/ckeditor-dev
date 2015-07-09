@@ -1,5 +1,5 @@
 /* bender-tags: widget */
-/* bender-ckeditor-plugins: embedsemantic,toolbar,undo,basicstyles */
+/* bender-ckeditor-plugins: embedsemantic,toolbar,undo,basicstyles,stylescombo */
 /* bender-include: ../widget/_helpers/tools.js, ../embedbase/_helpers/tools.js */
 /* global embedTools, widgetTestsTools */
 
@@ -8,11 +8,19 @@
 bender.editors = {
 	classic: {
 		name: 'editor_classic',
-		creator: 'replace'
+		creator: 'replace',
+		config: {
+			extraAllowedContent: 'oembed(a,b,c)',
+			stylesSet: [
+				{ name: 'Foo media', type: 'widget', widget: 'embedSemantic', attributes: { 'class': 'foo' } },
+				{ name: 'Bar media', type: 'widget', widget: 'embedSemantic', attributes: { 'class': 'bar' } }
+			]
+		}
 	}
 };
 
 var obj2Array = widgetTestsTools.obj2Array;
+var classes2Array = widgetTestsTools.classes2Array;
 
 embedTools.mockJsonp();
 
@@ -79,6 +87,36 @@ var tcs = {
 				editor.execCommand( 'undo' );
 
 				assert.isFalse( loadContentSpy.called, 'widget.loadContent was not called on undo' );
+			}, 100 );
+		} );
+	},
+
+	'test support for widget classes - from extraAC': function() {
+		var bot = this.editorBots.classic,
+			editor = bot.editor;
+
+		bot.setData( '<p>x</p><oembed class="a c b">http://widget/classes</oembed><p>x</p>', function() {
+			wait( function() {
+				arrayAssert.itemsAreSame( [ 'a', 'b', 'c' ],
+					classes2Array( obj2Array( editor.widgets.instances )[ 0 ].getClasses() ).sort(), 'classes transfered from data to widget.element' );
+
+				assert.areSame( '<p>x</p><oembed class="a b c">http://widget/classes</oembed><p>x</p>', bot.getData(), 'classes transfered from widget.element back to data' );
+			}, 100 );
+		} );
+	},
+
+	'test support for widget classes - from stylesSet': function() {
+		var bot = this.editorBots.classic,
+			editor = bot.editor;
+
+		assert.isTrue( editor.filter.check( 'oembed(foo)' ), 'class from a stylesSet is registered' );
+
+		bot.setData( '<p>x</p><oembed class="bar foo">http://widget/classes</oembed><p>x</p>', function() {
+			wait( function() {
+				arrayAssert.itemsAreSame( [ 'bar', 'foo' ],
+					classes2Array( obj2Array( editor.widgets.instances )[ 0 ].getClasses() ).sort(), 'classes transfered from data to widget.element' );
+
+				assert.areSame( '<p>x</p><oembed class="bar foo">http://widget/classes</oembed><p>x</p>', bot.getData(), 'classes transfered from widget.element back to data' );
 			}, 100 );
 		} );
 	}

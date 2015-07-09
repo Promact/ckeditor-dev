@@ -17,21 +17,21 @@ CKEDITOR.dialog.add( 'embedBase', function( editor ) {
 
 		onLoad: function() {
 			var that = this,
-				okButton = that.getButton( 'ok' );
+				loadContentRequest = null;
 
 			this.on( 'ok', function( evt ) {
 				// We're going to hide it manually, after remote response is fetched.
 				evt.data.hide = false;
 
-				// Disable the OK button for the time of loading, so user can't trigger multiple inserts.
-				okButton.disable();
-
 				// We don't want the widget system to finalize widget insertion (it happens with priority 20).
 				evt.stop();
 
+				// Indicate visually that waiting for the response (#13213).
+				that.setState( CKEDITOR.DIALOG_STATE_BUSY );
+
 				var url = that.getValueOf( 'info', 'url' );
 
-				that.widget.loadContent( url, {
+				loadContentRequest = that.widget.loadContent( url, {
 					noNotifications: true,
 
 					callback: function() {
@@ -41,20 +41,32 @@ CKEDITOR.dialog.add( 'embedBase', function( editor ) {
 
 						editor.fire( 'saveSnapshot' );
 
-						okButton.enable();
 						that.hide();
+						unlock();
 					},
 
 					errorCallback: function( messageTypeOrMessage ) {
 						that.getContentElement( 'info', 'url' ).select();
 
-						// We need to enable the OK button so user can fix the URL.
-						okButton.enable();
-
 						alert( that.widget.getErrorMessage( messageTypeOrMessage, url, 'Given' ) );
+
+						unlock();
 					}
 				} );
 			}, null, null, 15 );
+
+			this.on( 'cancel', function( evt ) {
+				if ( evt.data.hide && loadContentRequest ) {
+					loadContentRequest.cancel();
+					unlock();
+				}
+			} );
+
+			function unlock() {
+				// Visual waiting indicator is no longer needed (#13213).
+				that.setState( CKEDITOR.DIALOG_STATE_IDLE );
+				loadContentRequest = null;
+			}
 		},
 
 		contents: [
@@ -65,7 +77,7 @@ CKEDITOR.dialog.add( 'embedBase', function( editor ) {
 					{
 						type: 'text',
 						id: 'url',
-						label: lang.url,
+						label: editor.lang.common.url,
 
 						setup: function( widget ) {
 							this.setValue( widget.data.url );

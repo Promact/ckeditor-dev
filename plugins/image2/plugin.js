@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license Copyright (c) 2003-2015, CKSource - Frederico Knabben. All rights reserved.
  * For licensing, see LICENSE.md or http://ckeditor.com/license
  */
@@ -385,23 +385,26 @@
 				// Note: Center alignment is detected during upcast, so only left/right cases
 				// are checked below.
 				if ( !data.align ) {
+					var alignElement = data.hasCaption ? this.element : image;
+
 					// Read the initial left/right alignment from the class set on element.
 					if ( alignClasses ) {
-						if ( this.element.hasClass( alignClasses[ 0 ] ) )
+						if ( alignElement.hasClass( alignClasses[ 0 ] ) ) {
 							data.align = 'left';
-						else if ( this.element.hasClass( alignClasses[ 2 ] ) )
+						} else if ( alignElement.hasClass( alignClasses[ 2 ] ) ) {
 							data.align = 'right';
+						}
 
-						if ( data.align )
-							this.element.removeClass( alignClasses[ alignmentsObj[ data.align ] ] );
-						else
+						if ( data.align ) {
+							alignElement.removeClass( alignClasses[ alignmentsObj[ data.align ] ] );
+						} else {
 							data.align = 'none';
+						}
 					}
 					// Read initial float style from figure/image and then remove it.
 					else {
-						data.align = this.element.getStyle( 'float' ) || image.getStyle( 'float' ) || 'none';
-						this.element.removeStyle( 'float' );
-						image.removeStyle( 'float' );
+						data.align = alignElement.getStyle( 'float' ) || 'none';
+						alignElement.removeStyle( 'float' );
 					}
 				}
 
@@ -412,8 +415,9 @@
 					// Get rid of cke_widget_* classes in data. Otherwise
 					// they might appear in link dialog.
 					var advanced = data.link.advanced;
-					if ( advanced && advanced.advCSSClasses )
+					if ( advanced && advanced.advCSSClasses ) {
 						advanced.advCSSClasses = CKEDITOR.tools.trim( advanced.advCSSClasses.replace( /cke_\S+/, '' ) );
+					}
 				}
 
 				// Get rid of extra vertical space when there's no caption.
@@ -1528,7 +1532,7 @@
  * A CSS class applied to the `<figure>` element of a captioned image.
  *
  *		// Changes the class to "captionedImage".
- *		CKEDITOR.config.image2_captionedClass = 'captionedImage';
+ *		config.image2_captionedClass = 'captionedImage';
  *
  * @cfg {String} [image2_captionedClass='image']
  * @member CKEDITOR.config
@@ -1536,9 +1540,12 @@
 CKEDITOR.config.image2_captionedClass = 'image';
 
 /**
- * Determine whether dimensions inputs should be automatically filled when image src changes in image2 dialog.
+ * Determines whether dimension inputs should be automatically filled when the image URL changes in the Enhanced Image
+ * plugin dialog window.
  *
- * @since 4.5.0
+ *		config.image2_prefillDimensions = false;
+ *
+ * @since 4.5
  * @cfg {Boolean} [image2_prefillDimensions=true]
  * @member CKEDITOR.config
  */
@@ -1546,7 +1553,9 @@ CKEDITOR.config.image2_captionedClass = 'image';
 /**
  * Disables the image resizer. By default the resizer is enabled.
  *
- * @since 4.5.0
+ *		config.image2_disableResizer = true;
+ *
+ * @since 4.5
  * @cfg {Boolean} [image2_disableResizer=false]
  * @member CKEDITOR.config
  */

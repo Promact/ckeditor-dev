@@ -22,8 +22,8 @@
 			isTypeSupported = CKEDITOR.fileTools.isTypeSupported;
 			getExtention = CKEDITOR.fileTools.getExtention;
 
-			// Reset uploadsRepository.
-			this.editor.uploadsRepository.loaders = [];
+			// Reset uploadRepository.
+			this.editor.uploadRepository.loaders = [];
 		},
 
 		'test getUploadUrl 1': function() {
@@ -94,12 +94,9 @@
 		},
 
 		'test getUploadUrl - throw error if no matching config': function() {
-			try {
-				getUploadUrl( {} );
-				assert.fail( 'getUploadUrl should throw error if no matching configuration option was found.' );
-			} catch ( err ) {
-				assert.areSame( 'Upload URL is not defined.', err );
-			}
+			var uploadUrl = getUploadUrl( {} );
+
+			assert.isNull( uploadUrl, 'null returned when none of upload URLs is defined' );
 		},
 
 		'test isTypeSupported 1': function() {
@@ -110,8 +107,8 @@
 			assert.isFalse( isTypeSupported( { type: 'image/jpeg' }, /image\/(png|gif)/ ) );
 		},
 
-		'test UploadsRepository': function() {
-			var repository = this.editor.uploadsRepository;
+		'test UploadRepository': function() {
+			var repository = this.editor.uploadRepository;
 
 			assert.areSame( 0, repository.loaders.length );
 			assert.isUndefined( repository.loaders[ 0 ] );
@@ -137,8 +134,8 @@
 		},
 
 
-		'test UploadsRepository instanceCreated event': function() {
-			var repository = this.editor.uploadsRepository,
+		'test UploadRepository instanceCreated event': function() {
+			var repository = this.editor.uploadRepository,
 				listener = sinon.spy();
 
 			repository.on( 'instanceCreated', listener );
@@ -149,8 +146,8 @@
 			assert.areSame( loader, listener.firstCall.args[ 0 ].data, 'Should be called with loader.' );
 		},
 
-		'test UploadsRepository isFinished': function() {
-			var repository = this.editor.uploadsRepository;
+		'test UploadRepository isFinished': function() {
+			var repository = this.editor.uploadRepository;
 
 
 			repository.create( { name: 'foo1' } );
@@ -170,6 +167,35 @@
 			sinon.stub( repository.loaders[ 1 ], 'isFinished' ).returns( true );
 
 			assert.isTrue( repository.isFinished(), '3/3' );
+		},
+
+		'test fileUploadResponse event': function() {
+			var log = window.console && sinon.stub( window.console, 'log' );
+
+			var message = 'Not a JSON';
+			var error = 'Error.';
+
+			// Mock.
+			var data = {
+				fileLoader: {
+					xhr: {
+						responseText: message
+					},
+
+					lang: {
+						filetools: {
+							responseError: error
+						}
+					}
+				}
+			};
+
+			this.editor.fire( 'fileUploadResponse', data );
+
+			log && log.restore();
+
+			assert.areEqual( data.message, error );
+			assert.isTrue( log ? log.calledWith( message ) : true );
 		}
 	} );
 } )();

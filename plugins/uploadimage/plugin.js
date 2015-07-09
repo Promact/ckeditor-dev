@@ -18,13 +18,21 @@
 		},
 
 		init: function( editor ) {
-			// Do not execute this paste lister if it will not be possible to upload file.
+			// Do not execute this paste listener if it will not be possible to upload file.
 			if ( !CKEDITOR.plugins.clipboard.isFileApiSupported ) {
 				return;
 			}
 
 			var fileTools = CKEDITOR.fileTools,
 				uploadUrl = fileTools.getUploadUrl( editor.config, 'image' );
+
+			if ( !uploadUrl ) {
+				window.console && window.console.log(
+					'Error: Upload URL for the Upload Image feature was not defined. ' +
+					'For more information see: http://docs.ckeditor.com/#!/guide/dev_file_upload'
+				);
+				return;
+			}
 
 			// Handle images which are available in the dataTransfer.
 			fileTools.addUploadWidget( editor, 'uploadimage', {
@@ -80,11 +88,12 @@
 					img = imgs.getItem( i );
 
 					// Image have to contain src=data:...
-					var isDataInSrc = img.getAttribute( 'src' ) && img.getAttribute( 'src' ).substring( 0, 5 ) == 'data:';
+					var isDataInSrc = img.getAttribute( 'src' ) && img.getAttribute( 'src' ).substring( 0, 5 ) == 'data:',
+						isRealObject = img.data( 'cke-realelement' ) === null;
 
-					// We are not uploading images in non-editable blocs.
-					if ( isDataInSrc && !img.data( 'cke-upload-id' ) && !img.isReadOnly( 1 ) ) {
-						var loader = editor.uploadsRepository.create( img.getAttribute( 'src' ) );
+					// We are not uploading images in non-editable blocs and fake objects (#13003).
+					if ( isDataInSrc && isRealObject && !img.data( 'cke-upload-id' ) && !img.isReadOnly( 1 ) ) {
+						var loader = editor.uploadRepository.create( img.getAttribute( 'src' ) );
 						loader.upload( uploadUrl );
 
 						fileTools.markElement( img, 'uploadimage', loader.id );
@@ -104,7 +113,7 @@
 	// jscs:enable maximumLineLength
 
 	/**
-	 * URL where images should be uploaded.
+	 * The URL where images should be uploaded.
 	 *
 	 * @since 4.5
 	 * @cfg {String} [imageUploadUrl='' (empty string = disabled)]

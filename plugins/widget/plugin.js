@@ -344,7 +344,7 @@
 		 *
 		 * @param {Boolean} [offline] Whether the widgets are offline (detached from the DOM tree) &mdash;
 		 * in this case the DOM (attributes, classes, etc.) will not be cleaned up.
-		 * @param {CKEDITOR.dom.element} [container] Container within widgets will be destroyed.
+		 * @param {CKEDITOR.dom.element} [container] The container within widgets will be destroyed.
 		 * This option will be ignored if the `offline` flag was set to `true`, because in such case
 		 * it is not possible to find widgets within the passed block.
 		 */
@@ -538,6 +538,46 @@
 			}
 
 			return newInstances;
+		},
+
+		/**
+		 * Allows to listen to events on specific types of widgets, even if they are not created yet.
+		 *
+		 * Please note that this method inherits parameters from the {@link CKEDITOR.event#method-on} method with one
+		 * extra parameter at the beginning which is the widget name.
+		 *
+		 *		editor.widgets.onWidget( 'image', 'action', function( evt ) {
+		 *			// Event `action` occurs on `image` widget.
+		 *		} );
+		 *
+		 * @since 4.5
+		 * @param {String} widgetName
+		 * @param {String} eventName
+		 * @param {Function} listenerFunction
+		 * @param {Object} [scopeObj]
+		 * @param {Object} [listenerData]
+		 * @param {Number} [priority=10]
+		 */
+		onWidget: function( widgetName ) {
+			var args = Array.prototype.slice.call( arguments );
+
+			args.shift();
+
+			for ( var i in this.instances ) {
+				var instance = this.instances[ i ];
+
+				if ( instance.name == widgetName ) {
+					instance.on.apply( instance, args );
+				}
+			}
+
+			this.on( 'instanceCreated', function( evt ) {
+				var widget = evt.data;
+
+				if ( widget.name == widgetName ) {
+					widget.on.apply( widget, args );
+				}
+			} );
 		},
 
 		/**
@@ -736,7 +776,7 @@
 	 *		// insert a new simplebox widget or edit the one currently focused.
 	 *		editor.execCommand( 'simplebox' );
 	 *
-	 * Note: When using a command widget's `startupData` can be passed as the command argument:
+	 * Note: Since CKEditor 4.5 widget's `startupData` can be passed as the command argument:
 	 *
 	 *		editor.execCommand( 'simplebox', {
 	 *			startupData: {
@@ -1164,7 +1204,8 @@
 		 * @returns {Boolean} Whether an editable was successfully initialized.
 		 */
 		initEditable: function( editableName, definition ) {
-			var editable = this.wrapper.findOne( definition.selector );
+			// Don't fetch just first element which matched selector but look for a correct one. (#13334)
+			var editable = this._findOneNotNested( definition.selector );
 
 			if ( editable && editable.is( CKEDITOR.dtd.$editable ) ) {
 				editable = new NestedEditable( this.editor, editable, {
@@ -1203,6 +1244,35 @@
 			}
 
 			return false;
+		},
+
+		/**
+		 * Looks inside wrapper element to find a node that
+		 * matches given selector and is not nested in other widget. (#13334)
+		 *
+		 * @since 4.5
+		 * @private
+		 * @param {String} selector Selector to match.
+		 * @returns {CKEDITOR.dom.element} Matched element or `null` if a node has not been found.
+		 */
+		_findOneNotNested: function( selector ) {
+			var matchedElements = this.wrapper.find( selector ),
+				match,
+				closestWrapper;
+
+			for ( var i = 0; i < matchedElements.count(); i++ ) {
+				match = matchedElements.getItem( i );
+				closestWrapper = match.getAscendant( Widget.isDomWidgetWrapper );
+
+				// The closest ascendant-wrapper of this match defines to which widget
+				// this match belongs. If the ascendant is this widget's wrapper
+				// it means that the match is not nested in other widget.
+				if ( this.wrapper.equals( closestWrapper ) ) {
+					return match;
+				}
+			}
+
+			return null;
 		},
 
 		/**
@@ -1348,8 +1418,11 @@
 
 		/**
 		 * Changes the widget's focus state. This method is executed automatically after
-		 * a widget has been focused by the {@link #method-focus} method or a selection was moved
+		 * a widget was focused by the {@link #method-focus} method or the selection was moved
 		 * out of the widget.
+		 *
+		 * This is a low-level method which is not integrated with e.g. the undo manager.
+		 * Use the {@link #method-focus} method instead.
 		 *
 		 * @param {Boolean} selected Whether to select or deselect this widget.
 		 * @chainable
@@ -1362,8 +1435,11 @@
 
 		/**
 		 * Changes the widget's select state. This method is executed automatically after
-		 * a widget has been selected by the {@link #method-focus} method or the selection
-		 * was moved out of widget.
+		 * a widget was selected by the {@link #method-focus} method or the selection
+		 * was moved out of the widget.
+		 *
+		 * This is a low-level method which is not integrated with e.g. the undo manager.
+		 * Use the {@link #method-focus} method instead or simply change the selection.
 		 *
 		 * @param {Boolean} selected Whether to select or deselect this widget.
 		 * @chainable
@@ -1409,13 +1485,13 @@
 
 	/**
 	 * Gets the {@link #isDomNestedEditable nested editable}
-	 * (returned as a {@link CKEDITOR.dom.element}, not {@link CKEDITOR.plugins.widget.nestedEditable})
+	 * (returned as a {@link CKEDITOR.dom.element}, not as a {@link CKEDITOR.plugins.widget.nestedEditable})
 	 * closest to the `node` or the `node` if it is a nested editable itself.
 	 *
-	 * @since 4.5.0
+	 * @since 4.5
 	 * @static
 	 * @param {CKEDITOR.dom.element} guard Stop ancestor search on this node (usually editor's editable).
-	 * @param {CKEDITOR.dom.node} node Start search from this node.
+	 * @param {CKEDITOR.dom.node} node Start the search from this node.
 	 * @returns {CKEDITOR.dom.element/null} Element or `null` if not found.
 	 */
 	Widget.getNestedEditable = function( guard, node ) {
@@ -1431,7 +1507,7 @@
 	/**
 	 * Checks whether the `node` is a widget's drag handle element.
 	 *
-	 * @since 4.5.0
+	 * @since 4.5
 	 * @static
 	 * @param {CKEDITOR.dom.node} node
 	 * @returns {Boolean}
@@ -1443,7 +1519,7 @@
 	/**
 	 * Checks whether the `node` is a container of the widget's drag handle element.
 	 *
-	 * @since 4.5.0
+	 * @since 4.5
 	 * @static
 	 * @param {CKEDITOR.dom.node} node
 	 * @returns {Boolean}
@@ -1454,10 +1530,10 @@
 
 	/**
 	 * Checks whether the `node` is a {@link CKEDITOR.plugins.widget#editables nested editable}.
-	 * Note that this function checks only whether it is the right element, not whether
+	 * Note that this function only checks whether it is the right element, not whether
 	 * the passed `node` is an instance of {@link CKEDITOR.plugins.widget.nestedEditable}.
 	 *
-	 * @since 4.5.0
+	 * @since 4.5
 	 * @static
 	 * @param {CKEDITOR.dom.node} node
 	 * @returns {Boolean}
@@ -1469,7 +1545,7 @@
 	/**
 	 * Checks whether the `node` is a {@link CKEDITOR.plugins.widget#element widget element}.
 	 *
-	 * @since 4.5.0
+	 * @since 4.5
 	 * @static
 	 * @param {CKEDITOR.dom.node} node
 	 * @returns {Boolean}
@@ -1481,7 +1557,7 @@
 	/**
 	 * Checks whether the `node` is a {@link CKEDITOR.plugins.widget#wrapper widget wrapper}.
 	 *
-	 * @since 4.5.0
+	 * @since 4.5
 	 * @static
 	 * @param {CKEDITOR.dom.element} node
 	 * @returns {Boolean}
@@ -1493,7 +1569,7 @@
 	/**
 	 * Checks whether the `node` is a {@link CKEDITOR.plugins.widget#element widget element}.
 	 *
-	 * @since 4.5.0
+	 * @since 4.5
 	 * @static
 	 * @param {CKEDITOR.htmlParser.node} node
 	 * @returns {Boolean}
@@ -1505,7 +1581,7 @@
 	/**
 	 * Checks whether the `node` is a {@link CKEDITOR.plugins.widget#wrapper widget wrapper}.
 	 *
-	 * @since 4.5.0
+	 * @since 4.5
 	 * @static
 	 * @param {CKEDITOR.htmlParser.element} node
 	 * @returns {Boolean}
@@ -1814,8 +1890,10 @@
 								// Finalize creation AFTER (20) new data was set.
 								okListener = dialog.once( 'ok', finalizeCreation, null, null, 20 );
 
-								cancelListener = dialog.once( 'cancel', function() {
-									editor.widgets.destroy( instance, true );
+								cancelListener = dialog.once( 'cancel', function( evt ) {
+									if ( !( evt.data && evt.data.hide === false ) ) {
+										editor.widgets.destroy( instance, true );
+									}
 								} );
 
 								dialog.once( 'hide', function() {
@@ -2307,6 +2385,12 @@
 			dragRange.setEndAfter( sourceWidget.wrapper );
 			evt.data.dragRange = dragRange;
 
+			// [IE8-9] Reset state of the clipboard#fixSplitNodesAfterDrop fix because by setting evt.data.dragRange
+			// (see above) after drop happened we do not need it. That fix is needed only if dragRange was created
+			// before drop (before text node was split).
+			delete CKEDITOR.plugins.clipboard.dragStartContainerChildCount;
+			delete CKEDITOR.plugins.clipboard.dragEndContainerChildCount;
+
 			evt.data.dataTransfer.setData( 'text/html', editor.editable().getHtmlFromRange( dragRange ).getHtml() );
 			editor.widgets.destroy( sourceWidget, true );
 		} );
@@ -2704,7 +2788,28 @@
 
 		// Handle pasted single widget.
 		editor.on( 'paste', function( evt ) {
-			evt.data.dataValue = evt.data.dataValue.replace( pasteReplaceRegex, pasteReplaceFn );
+			var data = evt.data;
+
+			data.dataValue = data.dataValue.replace( pasteReplaceRegex, pasteReplaceFn );
+
+			// If drag'n'drop kind of paste into nested editable (data.range), selection is set AFTER
+			// data is pasted, which means editor has no chance to change activeFilter's context.
+			// As a result, pasted data is filtered with default editor's filter instead of NE's and
+			// funny things get inserted. Changing the filter by analysis of the paste range below (#13186).
+			if ( data.range ) {
+				// Check if pasting into nested editable.
+				var nestedEditable = Widget.getNestedEditable( editor.editable(), data.range.startContainer );
+
+				if ( nestedEditable ) {
+					// Retrieve the filter from NE's data and set it active before editor.insertHtml is done
+					// in clipboard plugin.
+					var filter = CKEDITOR.filter.instances[ nestedEditable.data( 'cke-filter' ) ];
+
+					if ( filter ) {
+						editor.setActiveFilter( filter );
+					}
+				}
+			}
 		} );
 
 		// Listen with high priority to check widgets after data was inserted.
@@ -3020,6 +3125,14 @@
 			container.append( img );
 			widget.wrapper.append( container );
 		}
+
+		// Preventing page reload when dropped content on widget wrapper (#13015).
+		// Widget is not editable so by default drop on it isn't allowed what means that
+		// browser handles it (there's no editable#drop event). If there's no drop event we cannot block
+		// the drop, so page is reloaded. This listener enables drop on widget wrappers.
+		widget.wrapper.on( 'dragover', function( evt ) {
+			evt.data.preventDefault();
+		} );
 
 		widget.wrapper.on( 'mouseenter', widget.updateDragHandlerPosition, widget );
 		setTimeout( function() {
@@ -3568,8 +3681,8 @@
  */
 
 /**
- * The {@link #upcast} method(s) priority. The upcast with lower priority number will be called before
- * the one with higher number. The default priority is `10`.
+ * The {@link #upcast} method(s) priority. The upcast with a lower priority number will be called before
+ * the one with a higher number. The default priority is `10`.
  *
  * @since 4.5
  * @property {Number} [upcastPriority=10]
@@ -3686,6 +3799,8 @@
 
 /**
  * An object containing definitions of nested editables (editable name => {@link CKEDITOR.plugins.widget.nestedEditable.definition}).
+ * Note that editables *have to* be defined in the same order as they are in DOM / {@link CKEDITOR.plugins.widget.definition#template template}.
+ * Otherwise errors will occur when nesting widgets inside each other.
  *
  *		editables: {
  *			header: 'h1',
