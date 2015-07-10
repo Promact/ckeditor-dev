@@ -80,6 +80,18 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
         return isValid;
     }
 
+    // Validates padding. Allowed values are:
+    // "123px", "123", "" (empty string)
+    function validatePadding() {
+        var match = this.getValue().match( regexGetSizeOrEmpty ),
+            isValid = !!( match && parseInt( match[ 1 ], 10 ) !== 0 );
+
+        if ( !isValid )
+            alert( CKEDITOR.tools.capitalize( this.label ) + ' must be a number.' ); // jshint ignore:line
+
+        return isValid;
+    }
+
     // Creates a function that pre-loads images. The callback function passes
     // [image, width, height] or null if loading failed.
     //
@@ -539,9 +551,10 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                         children: [
                             {
                                 type: 'text',
-                                width: '85px',
+                                width: '70px',
                                 id: 'paddingTop',
-                                label: 'Padding Top',
+                                label: 'Pad Top',
+                                validate: validatePadding,
                                 onLoad: function () {
                                     paddingField.top = this;
                                 },
@@ -554,9 +567,10 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                             },
                             {
                                 type: 'text',
-                                width: '85px',
+                                width: '70px',
                                 id: 'paddingBottom',
-                                label: 'Padding Bottom',
+                                label: 'Pad Bottom',
+                                validate: validatePadding,
                                 onLoad: function () {
                                     paddingField.bottom = this;
                                 },
@@ -569,9 +583,10 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                             },
                             {
                                 type: 'text',
-                                width: '85px',
+                                width: '70px',
                                 id: 'paddingLeft',
-                                label: 'Padding Left',
+                                label: 'Pad Left',
+                                validate: validatePadding,
                                 onLoad: function () {
                                     paddingField.left = this;
                                 },
@@ -584,9 +599,10 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                             },
                             {
                                 type: 'text',
-                                width: '85px',
+                                width: '70px',
                                 id: 'paddingRight',
-                                label: 'Padding Right',
+                                label: 'Pad Right',
+                                validate: validatePadding,
                                 onLoad: function () {
                                     paddingField.right = this;
                                 },

@@ -1066,22 +1066,22 @@
             image = widget.parts.image;
 
         if ( data.paddingTop ) {
-            image.$.style.paddingTop = data.paddingTop + "px";
+            image.$.style.paddingTop = data.paddingTop + ( isNaN( data.paddingTop ) ? "" : "px" );
         } else {
             image.$.style.paddingTop = 0;
         }
         if ( data.paddingBottom ) {
-            image.$.style.paddingBottom = data.paddingBottom + "px";
+            image.$.style.paddingBottom = data.paddingBottom + ( isNaN( data.paddingBottom ) ? "" : "px" );
         } else {
             image.$.style.paddingBottom = 0;
         }
         if ( data.paddingLeft ) {
-            image.$.style.paddingLeft = data.paddingLeft + "px";
+            image.$.style.paddingLeft = data.paddingLeft + ( isNaN( data.paddingLeft ) ? "" : "px" );
         } else {
             image.$.style.paddingLeft = 0;
         }
         if ( data.paddingRight ) {
-            image.$.style.paddingRight = data.paddingRight + "px";
+            image.$.style.paddingRight = data.paddingRight + ( isNaN( data.paddingRight ) ? "" : "px" );
         } else {
             image.$.style.paddingRight = 0;
         }
