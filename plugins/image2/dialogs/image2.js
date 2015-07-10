@@ -551,7 +551,7 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                         children: [
                             {
                                 type: 'text',
-                                width: '70px',
+                                width: '85px',
                                 id: 'paddingTop',
                                 label: 'Pad Top',
                                 validate: validatePadding,
@@ -567,7 +567,7 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                             },
                             {
                                 type: 'text',
-                                width: '70px',
+                                width: '85px',
                                 id: 'paddingBottom',
                                 label: 'Pad Bottom',
                                 validate: validatePadding,
@@ -583,7 +583,7 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                             },
                             {
                                 type: 'text',
-                                width: '70px',
+                                width: '85px',
                                 id: 'paddingLeft',
                                 label: 'Pad Left',
                                 validate: validatePadding,
@@ -599,7 +599,7 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                             },
                             {
                                 type: 'text',
-                                width: '70px',
+                                width: '85px',
                                 id: 'paddingRight',
                                 label: 'Pad Right',
                                 validate: validatePadding,
