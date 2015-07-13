@@ -84,7 +84,7 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
     // "123px", "123", "" (empty string)
     function validatePadding() {
         var match = this.getValue().match( regexGetSizeOrEmpty ),
-            isValid = !!( match && parseInt( match[ 1 ], 10 ) !== 0 );
+            isValid = !!match;
 
         if ( !isValid )
             alert( CKEDITOR.tools.capitalize( this.label ) + ' must be a number.' ); // jshint ignore:line
@@ -559,10 +559,10 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                                     paddingField.top = this;
                                 },
                                 setup: function ( widget ) {
-                                    this.setValue( widget.data.paddingTop );
+                                    this.setValue( widget.data.paddingTop === 0 || widget.data.paddingTop === '' ? '0px' : widget.data.paddingTop );
                                 },
                                 commit: function ( widget ) {
-                                    widget.setData( 'paddingTop', this.getValue () );
+                                    widget.setData( 'paddingTop', isNaN( this.getValue () ) ? this.getValue () : this.getValue () + 'px' );
                                 }
                             },
                             {
@@ -575,10 +575,10 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                                     paddingField.bottom = this;
                                 },
                                 setup: function ( widget ) {
-                                    this.setValue( widget.data.paddingBottom );
+                                    this.setValue( widget.data.paddingBottom === 0 || widget.data.paddingBottom === '' ? '0px' : widget.data.paddingBottom );
                                 },
                                 commit: function ( widget ) {
-                                    widget.setData( 'paddingBottom', this.getValue () );
+                                    widget.setData( 'paddingBottom', isNaN( this.getValue () ) ? this.getValue () : this.getValue () + 'px' );
                                 }
                             },
                             {
@@ -591,10 +591,10 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                                     paddingField.left = this;
                                 },
                                 setup: function ( widget ) {
-                                    this.setValue( widget.data.paddingLeft );
+                                    this.setValue( widget.data.paddingLeft === 0 || widget.data.paddingLeft === '' ? '0px' : widget.data.paddingLeft );
                                 },
                                 commit: function ( widget ) {
-                                    widget.setData( 'paddingLeft', this.getValue () );
+                                    widget.setData( 'paddingLeft', isNaN( this.getValue () ) ? this.getValue () : this.getValue () + 'px' );
                                 }
                             },
                             {
@@ -607,10 +607,10 @@ CKEDITOR.dialog.add( 'image2', function( editor ) {
                                     paddingField.right = this;
                                 },
                                 setup: function ( widget ) {
-                                    this.setValue( widget.data.paddingRight );
+                                    this.setValue( widget.data.paddingRight === 0 || widget.data.paddingRight === '' ? '0px' : widget.data.paddingRight );
                                 },
                                 commit: function ( widget ) {
-                                    widget.setData( 'paddingRight', this.getValue () );
+                                    widget.setData( 'paddingRight', isNaN( this.getValue () ) ? this.getValue () : this.getValue () + 'px' );
                                 }
                             }
                         ]
